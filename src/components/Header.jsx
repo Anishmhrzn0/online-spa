@@ -10,7 +10,8 @@ const Header = ({
   const menuItems = [
     { id: 'home', label: 'Home' },
     { id: 'services', label: 'Services' },
-    { id: 'about', label: 'About' }
+    { id: 'about', label: 'About' },
+    { id: 'booking', label: 'Booking' }
   ];
 
   return (
@@ -21,7 +22,11 @@ const Header = ({
             <Waves className="h-8 w-8 text-blue-600" />
             <span className="text-2xl font-bold text-gray-900">AquaLux Spa</span>
           </div>
-          
+
+
+
+          <div></div>
+        
           <nav className="hidden md:flex space-x-8">
             {menuItems.map((item) => (
               <button

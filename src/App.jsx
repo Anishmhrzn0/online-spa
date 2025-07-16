@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Hero from './components/Hero';
 import Services from './components/Services';
 import About from './components/About';
+import Booking from './components/Booking';
 
 function App() {
   const [currentSection, setCurrentSection] = useState('home');
@@ -23,7 +24,7 @@ function App() {
   // Update current section based on scroll position
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['home', 'services', 'about'];
+      const sections = ['home', 'services', 'about', 'booking'];
       const headerHeight = 64;
       
       for (const section of sections) {
@@ -61,6 +62,10 @@ function App() {
         <section id="about" className="min-h-screen">
           <About />
         </section>
+
+        <section id="booking" className="min-h-screen">
+          <Booking />
+          </section>
       </main>
     </div>
   );

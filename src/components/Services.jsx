@@ -41,6 +41,18 @@ const Services = () => {
     }
   ];
 
+  const handleBookNow = () => {
+    const bookingElement = document.getElementById('booking');
+    if (bookingElement) {
+      const headerHeight = 64;
+      const elementPosition = bookingElement.offsetTop - headerHeight;
+      window.scrollTo({
+        top: elementPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,6 +103,12 @@ const Services = () => {
               
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold text-gray-900">{service.price}</span>
+                <button 
+                  onClick={handleBookNow}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Book Now
+                </button>
               </div>
             </div>
           ))}

@@ -8,6 +8,7 @@ import UserProfile from './components/UserProfile';
 
 function App() {
   const [currentSection, setCurrentSection] = useState('home');
+   const [user, setUser] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
 
 
@@ -23,11 +24,38 @@ function App() {
       });
     }
   };
+  const handleBookingClick = () => {
+    setCurrentSection('booking');
+    const element = document.getElementById('booking');
+    if (element) {
+      const headerHeight = 64; // Height of fixed header
+      const elementPosition = element.offsetTop - headerHeight;
+      window.scrollTo({
+        top: elementPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setShowAuth(false);
+  };
 
   const handleLogout = () => {
     setUser(null);
     setShowProfile(false);
     localStorage.removeItem('aqualux_current_user');
+  };
+    // Function to refresh user data from localStorage
+  const refreshUserData = () => {
+    if (user) {
+      const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
+      const updatedUser = users.find((u) => u.id === user.id);
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+    }
   };
 
   // Update current section based on scroll position
@@ -61,24 +89,28 @@ function App() {
         onProfileClick={() => setShowProfile(true)}
       />
 
-      <main className='m'>
-        <section id="home" className="min-h-screen">
-          <Hero className="" />
-        </section>
-
-        <section id="services" className="min-h-screen">
-          <Services />
-        </section>
-
-        <section id="about" className="min-h-screen">
-          <About />
-        </section>
-
-        <section id="booking" className="min-h-screen">
-          <Booking />
-        </section>
-      </main>
-      <Footer />
+       <main>
+              <section id="home" className="min-h-screen">
+                <Hero onBookingClick={handleBookingClick} />
+              </section>
+              
+              <section id="services" className="min-h-screen">
+                <Services />
+              </section>
+              
+              <section id="booking" className="min-h-screen">
+                <Booking 
+                  user={user} 
+                  onBookingSuccess={refreshUserData}
+                />
+              </section>
+              
+              <section id="about" className="min-h-screen">
+                <About />
+              </section>
+            </main>
+            
+      {/* <Footer/> */}
       <UserProfile
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}

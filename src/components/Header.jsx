@@ -1,17 +1,21 @@
-  import React from 'react';
-import { Waves, Menu, X } from 'lucide-react';
+import React from 'react';
+import { Waves, Menu, X, User } from 'lucide-react';
 
 const Header = ({ 
   currentSection, 
-  onSectionChange
+  onSectionChange, 
+  user, 
+  onAuthClick, 
+  onProfileClick 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const menuItems = [
     { id: 'home', label: 'Home' },
     { id: 'services', label: 'Services' },
+    { id: 'booking', label: 'Book Now' },
     { id: 'about', label: 'About' },
-    { id: 'booking', label: 'Booking' }
+    { id: 'contact', label: 'Contact' }
   ];
 
   return (
@@ -22,11 +26,7 @@ const Header = ({
             <Waves className="h-8 w-8 text-blue-600" />
             <span className="text-2xl font-bold text-gray-900">AquaLux Spa</span>
           </div>
-
-
-
-          <div></div>
-        
+          
           <nav className="hidden md:flex space-x-8">
             {menuItems.map((item) => (
               <button
@@ -43,7 +43,24 @@ const Header = ({
             ))}
           </nav>
 
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <button
+                onClick={onProfileClick}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">{user.firstName}</span>
+              </button>
+            ) : (
+              <button
+                onClick={onAuthClick}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Sign In
+              </button>
+            )}
+
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900"
@@ -73,6 +90,17 @@ const Header = ({
                 {item.label}
               </button>
             ))}
+            {!user && (
+              <button
+                onClick={() => {
+                  onAuthClick();
+                  setIsMenuOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50"
+              >
+                Sign In / Sign Up
+              </button>
+            )}
           </div>
         </div>
       )}

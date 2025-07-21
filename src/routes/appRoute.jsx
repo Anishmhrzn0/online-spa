@@ -10,12 +10,13 @@ const AppRoutes = () => {
   return (
     <Routes>
 
-      <Route path="/" element={<About />} />
+      <Route path="/about" element={<About />} />
       <Route path="/header" element={<Header />} />
       <Route path="/hero" element={<Hero />} />
       <Route path="/services" element={<Services />} />
       <Route path="/booking" element={<Booking />} />
       <Route path="/user-profile" element={<UserProfile />} />
+      
       
       {/* Add more routes as needed */}
     

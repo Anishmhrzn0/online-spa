@@ -15,7 +15,6 @@ const Header = ({
     { id: 'services', label: 'Services' },
     { id: 'booking', label: 'Book Now' },
     { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' }
   ];
 
   return (

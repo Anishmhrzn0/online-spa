@@ -1,20 +1,20 @@
-import React from 'react';
-import { Waves, Menu, X, User } from 'lucide-react';
+  import React from 'react';
+import { Waves, Menu, X, User, LogIn } from 'lucide-react';
 
 const Header = ({ 
   currentSection, 
-  onSectionChange, 
-  user, 
-  onAuthClick, 
-  onProfileClick 
+  onSectionChange,
+  isAdmin = false,
+  user = null,
+  onAuthClick,
+  onProfileClick
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const menuItems = [
     { id: 'home', label: 'Home' },
     { id: 'services', label: 'Services' },
-    { id: 'booking', label: 'Book Now' },
-    { id: 'about', label: 'About' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin' }] : [])
   ];
 
   return (
@@ -42,24 +42,25 @@ const Header = ({
             ))}
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center">
             {user ? (
               <button
                 onClick={onProfileClick}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="hidden md:flex items-center space-x-2 text-gray-600 hover:text-gray-900"
               >
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user.firstName}</span>
+                <User className="h-5 w-5" />
+                <span className="text-sm font-medium">{user.name}</span>
               </button>
             ) : (
               <button
                 onClick={onAuthClick}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="hidden md:flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Sign In
+                <LogIn className="h-4 w-4" />
+                <span className="text-sm font-medium">Sign In</span>
               </button>
             )}
-
+            
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900"
@@ -89,17 +90,32 @@ const Header = ({
                 {item.label}
               </button>
             ))}
-            {!user && (
-              <button
-                onClick={() => {
-                  onAuthClick();
-                  setIsMenuOpen(false);
-                }}
-                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50"
-              >
-                Sign In / Sign Up
-              </button>
-            )}
+            
+            <div className="border-t border-gray-200 pt-2 mt-2">
+              {user ? (
+                <button
+                  onClick={() => {
+                    onProfileClick();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  <User className="h-4 w-4 inline mr-2" />
+                  {user.name}
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    onAuthClick();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <LogIn className="h-4 w-4 inline mr-2" />
+                  Sign In
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,307 +1,257 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, Mail, Droplets, Thermometer, Flower, Settings } from 'lucide-react';
+import { X, Calendar, Clock, User, Mail, Phone, CreditCard } from 'lucide-react';
 
-const Booking = ({ user, onAuthRequired, onBookingSuccess }) => {
-  const [selectedService, setSelectedService] = useState('hydrotherapy');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [formData, setFormData] = useState({
-    name: user ? `${user.firstName} ${user.lastName}` : '',
+const BookingModal = ({ isOpen, onClose, service, user, onBookingComplete }) => {
+  const [bookingData, setBookingData] = useState({
+    date: '',
+    time: '',
+    name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
-    preferences: {
-      temperature: 'medium',
-      aromatherapy: 'lavender',
-      pressure: 'medium',
-      duration: '90'
-    }
+    phone: '',
+    specialRequests: ''
   });
-
-  const services = [
-    { id: 'hydrotherapy', name: 'Hydrotherapy Supreme', price: 180, icon: Droplets },
-    { id: 'thermal', name: 'Thermal Equilibrium', price: 150, icon: Thermometer },
-    { id: 'aromatherapy', name: 'Aromatherapy Luxe', price: 200, icon: Flower },
-    { id: 'wellness', name: 'Wellness Intensive', price: 350, icon: Settings }
-  ];
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const timeSlots = [
-    '09:00', '10:30', '12:00', '13:30', '15:00', '16:30', '18:00', '19:30'
+    '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM',
+    '5:00 PM', '6:00 PM', '7:00 PM'
   ];
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!user && onAuthRequired) {
-      onAuthRequired();
-      return;
-    }
+  const validateForm = () => {
+    const newErrors = {};
 
-    if (!selectedDate || !selectedTime) {
-      alert('Please select both date and time for your appointment.');
-      return;
-    }
-    
-    // Create booking object
-    const selectedServiceData = services.find(s => s.id === selectedService);
-    const newBooking = {
-      id: Date.now(),
-      service: selectedServiceData?.name || 'Unknown Service',
-      date: selectedDate,
-      time: selectedTime,
-      status: 'confirmed',
-      price: selectedServiceData?.price || 0,
-      preferences: formData.preferences,
-      bookedAt: new Date().toISOString()
-    };
+    if (!bookingData.date) newErrors.date = 'Date is required';
+    if (!bookingData.time) newErrors.time = 'Time is required';
+    if (!bookingData.name.trim()) newErrors.name = 'Name is required';
+    if (!bookingData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(bookingData.email)) newErrors.email = 'Email is invalid';
+    if (!bookingData.phone.trim()) newErrors.phone = 'Phone is required';
 
-    // Save booking to user's profile
-    if (user) {
-      const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
-      const userIndex = users.findIndex((u) => u.id === user.id);
-      
-      if (userIndex !== -1) {
-        if (!users[userIndex].bookings) {
-          users[userIndex].bookings = [];
-        }
-        users[userIndex].bookings.push(newBooking);
-        localStorage.setItem('aqualux_users', JSON.stringify(users));
-        
-        // Update current user in localStorage
-        const updatedUser = { ...user, bookings: users[userIndex].bookings };
-        localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
-        
-        // Notify parent component to refresh user data
-        if (onBookingSuccess) {
-          onBookingSuccess();
-        }
+    // Check if date is in the future
+    if (bookingData.date) {
+      const selectedDate = new Date(bookingData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.date = 'Please select a future date';
       }
     }
-    
-    // Reset form
-    setSelectedDate('');
-    setSelectedTime('');
-    setFormData({
-      ...formData,
-      preferences: {
-        temperature: 'medium',
-        aromatherapy: 'lavender',
-        pressure: 'medium',
-        duration: '90'
-      }
-    });
-    
-    alert(`Booking confirmed! Your ${selectedServiceData?.name} appointment is scheduled for ${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}. You can view and manage your bookings in your profile.`);
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  // Update form data when user changes
-  React.useEffect(() => {
-    if (user) {
-      setFormData({
-        ...formData,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        phone: user.phone || ''
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
+    // Simulate booking process
+    setTimeout(() => {
+      const booking = {
+        id: Date.now(),
+        serviceId: service.id,
+        serviceName: service.title,
+        servicePrice: service.price,
+        serviceDuration: service.duration,
+        date: bookingData.date,
+        time: bookingData.time,
+        customerName: bookingData.name,
+        customerEmail: bookingData.email,
+        customerPhone: bookingData.phone,
+        specialRequests: bookingData.specialRequests,
+        status: 'confirmed',
+        createdAt: new Date().toISOString()
+      };
+
+      onBookingComplete(booking);
+      setIsLoading(false);
+      onClose();
+      
+      // Reset form
+      setBookingData({
+        date: '',
+        time: '',
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: '',
+        specialRequests: ''
       });
-    }
-  }, [user]);
+      setErrors({});
+    }, 1500);
+  };
+
+  if (!isOpen || !service) return null;
 
   return (
-    <section className="py-20 bg-gradient-to-br from-blue-50 to-teal-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Book Your Experience
-          </h2>
-          <p className="text-xl text-gray-600">
-            Customize your perfect spa treatment with our advanced booking system
-          </p>
-          {!user && (
-            <div className="mt-4 p-4 bg-blue-100 rounded-lg">
-              <p className="text-blue-800">
-                <strong>Sign in</strong> to save your preferences and manage your bookings easily!
-              </p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Book Your Treatment</h2>
+              <p className="text-gray-600">{service.title}</p>
             </div>
-          )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Service Selection */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Droplets className="h-5 w-5 mr-2 text-blue-600" />
-                Select Treatment
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                {services.map((service) => (
-                  <div
-                    key={service.id}
-                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                      selectedService === service.id
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedService(service.id)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <service.icon className="h-6 w-6 text-blue-600" />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{service.name}</h4>
-                        <p className="text-sm text-gray-600">${service.price}</p>
-                        {user && (
-                          <p className="text-xs text-green-600">Member discount applied</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        <div className="p-6">
+          {/* Service Summary */}
+          <div className="bg-blue-50 rounded-xl p-4 mb-6">
+            <h3 className="font-semibold text-gray-900 mb-2">{service.title}</h3>
+            <p className="text-gray-600 text-sm mb-3">{service.description}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-blue-600 font-semibold text-lg">{service.price}</span>
+                <span className="text-gray-500">{service.duration}</span>
               </div>
             </div>
+          </div>
 
-            {/* Date & Time Selection */}
-            <div className="grid md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Date and Time */}
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="h-4 w-4 inline mr-2" />
-                  Select Date *
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  Preferred Date
                 </label>
                 <input
                   type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  value={bookingData.date}
+                  onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
+                  className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.date ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Clock className="h-4 w-4 inline mr-2" />
-                  Select Time *
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Preferred Time
                 </label>
                 <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
+                  value={bookingData.time}
+                  onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
+                  className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.time ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 >
-                  <option value="">Choose a time</option>
+                  <option value="">Select time</option>
                   {timeSlots.map((time) => (
                     <option key={time} value={time}>{time}</option>
                   ))}
                 </select>
+                {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time}</p>}
               </div>
             </div>
 
             {/* Personal Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-600" />
-                Personal Information
-                {user && <span className="ml-2 text-sm text-green-600">(Auto-filled from profile)</span>}
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-900">Personal Information</h4>
+              
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
+                    <User className="h-4 w-4 inline mr-1" />
+                    Full Name
                   </label>
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    readOnly={!!user}
+                    value={bookingData.name}
+                    onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
+                    className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.name ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your full name"
                   />
+                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Phone className="h-4 w-4 inline mr-2" />
-                    Phone Number *
+                    <Mail className="h-4 w-4 inline mr-1" />
+                    Email Address
                   </label>
                   <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    readOnly={!!user}
+                    type="email"
+                    value={bookingData.email}
+                    onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
+                    className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your email"
                   />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
               </div>
-              <div className="mt-4">
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="h-4 w-4 inline mr-2" />
-                  Email Address *
+                  <Phone className="h-4 w-4 inline mr-1" />
+                  Phone Number
                 </label>
                 <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                  readOnly={!!user}
+                  type="tel"
+                  value={bookingData.phone}
+                  onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
+                  className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.phone ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your phone number"
+                />
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Special Requests (Optional)
+                </label>
+                <textarea
+                  value={bookingData.specialRequests}
+                  onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="3"
+                  placeholder="Any special requests or preferences..."
                 />
               </div>
             </div>
 
-            {/* Treatment Preferences */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Settings className="h-5 w-5 mr-2 text-blue-600" />
-                Treatment Preferences
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Water Temperature
-                  </label>
-                  <select
-                    value={formData.preferences.temperature}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      preferences: {...formData.preferences, temperature: e.target.value}
-                    })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="cool">Cool (95-100°F)</option>
-                    <option value="medium">Medium (100-104°F)</option>
-                    <option value="warm">Warm (104-108°F)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Aromatherapy Blend
-                  </label>
-                  <select
-                    value={formData.preferences.aromatherapy}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      preferences: {...formData.preferences, aromatherapy: e.target.value}
-                    })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="lavender">Lavender (Relaxing)</option>
-                    <option value="eucalyptus">Eucalyptus (Energizing)</option>
-                    <option value="chamomile">Chamomile (Calming)</option>
-                    <option value="citrus">Citrus (Uplifting)</option>
-                  </select>
-                </div>
+            {/* Payment Info */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center mb-2">
+                <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Payment Information</h4>
               </div>
+              <p className="text-gray-600 text-sm">
+                Payment will be processed at the spa. You can pay by cash, card, or digital payment methods.
+              </p>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-teal-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {user ? 'Book Your Experience' : 'Sign In to Book'}
+              {isLoading ? 'Booking Your Treatment...' : `Book Treatment - ${service.price}`}
             </button>
           </form>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 
-export default Booking;
+export default BookingModal;

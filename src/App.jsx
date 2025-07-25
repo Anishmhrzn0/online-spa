@@ -1,268 +1,198 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
+import About from './components/About';
 import Services from './components/Services';
+import BookingPage from './components/Booking';
 import Auth from './components/Auth';
 import UserProfile from './components/UserProfile';
-import Booking from './components/Booking';
+import Admin from './components/Admin';
 
 function App() {
-  const [currentSection, setCurrentSection] = useState('home');
-
- 
   const [user, setUser] = useState(null);
-  const [showAuth, setShowAuth] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState(false);
-  const [showBooking, setShowBooking] = useState(false);
-  const [selectedService, setSelectedService] = useState(null);
-  const [userBookings, setUserBookings] = useState([]);
-  const [registeredUsers, setRegisteredUsers] = useState([
-    // Pre-registered admin user
-    
-  ]);
-  const [allBookings, setAllBookings] = useState([
-    {
-      id: 1,
-      serviceId: 1,
-      serviceName: 'Hydrotherapy Supreme',
-      servicePrice: '$180',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      customerName: 'Sarah Johnson',
-      customerEmail: 'sarah.j@email.com',
-      customerPhone: '+1 (555) 123-4567',
-      status: 'confirmed',
-      createdAt: '2024-01-10T10:00:00Z'
-    },
-    {
-      id: 2,
-      serviceId: 3,
-      serviceName: 'Aromatherapy Luxe',
-      servicePrice: '$200',
-      date: '2024-01-28',
-      time: '10:00 AM',
-      customerName: 'Michael Chen',
-      customerEmail: 'm.chen@email.com',
-      customerPhone: '+1 (555) 987-6543',
-      status: 'confirmed',
-      createdAt: '2024-01-20T14:30:00Z'
-    }
-  ]);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [allBookings, setAllBookings] = useState([]);
 
   // Load user from localStorage on app start
   useEffect(() => {
-    // Load registered users from localStorage
-    const savedUsers = localStorage.getItem('aqualux_registered_users');
-    if (savedUsers) {
-      setRegisteredUsers(JSON.parse(savedUsers));
-    }
-    
-    const savedUser = localStorage.getItem('aqualux_user');
+    const savedUser = localStorage.getItem('aqualux_current_user');
     if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-      // Check if saved user is admin
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error loading user from localStorage:', error);
+        localStorage.removeItem('aqualux_current_user');
+      }
+    }
+
+    // Load all bookings for admin
+    const savedBookings = localStorage.getItem('aqualux_all_bookings');
+    if (savedBookings) {
+      try {
+        setAllBookings(JSON.parse(savedBookings));
+      } catch (error) {
+        console.error('Error loading bookings from localStorage:', error);
+      }
     }
   }, []);
 
-  const handleUserAuth = (userData) => {
-    if (userData.type === 'signup') {
-      // Handle new user registration
-      const newUser = {
-        id: Date.now(),
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        isAdmin: userData.email === 'admin@aqualuxspa.com',
-        joinDate: new Date().toISOString()
-      };
-      
-      // Add to registered users
-      const updatedUsers = [...registeredUsers, newUser];
-      setRegisteredUsers(updatedUsers);
-      localStorage.setItem('aqualux_registered_users', JSON.stringify(updatedUsers));
-      
-      // Set as current user
-      const userForSession = {
-        id: newUser.id, 
-        name: newUser.name,
-        email: newUser.email,
-        joinDate: newUser.joinDate,
-        isAdmin: newUser.isAdmin
-      };
-      
-      if (newUser.isAdmin) {
-        setIsAdmin(true);
-      }
-      
-      setUser(userForSession);
-      localStorage.setItem('aqualux_user', JSON.stringify(userForSession));
-    } else {
-      // Handle existing user login
-      if (userData.isAdmin) {
-        setIsAdmin(true);
-      }
-      
-      setUser(userData);
-      localStorage.setItem('aqualux_user', JSON.stringify(userData));
-    }
-    
-    setShowAuthModal(false);
+  const handleLogin = (userData) => {
+    const userWithName = {
+      ...userData,
+      name: `${userData.firstName} ${userData.lastName}`,
+      isAdmin: userData.email === 'admin@aqualux.com' // Make admin user
+    };
+    setUser(userWithName);
+    localStorage.setItem('aqualux_current_user', JSON.stringify(userWithName));
   };
 
-  const handleUserLogout = () => {
+  const handleLogout = () => {
     setUser(null);
-    setIsAdmin(false);
-    localStorage.removeItem('aqualux_user');
-    setShowUserProfile(false);
-  };
-
-  const handleUpdateUser = (updatedUser) => {
-    setUser(updatedUser);
-    localStorage.setItem('aqualux_user', JSON.stringify(updatedUser));
-  };
-
-  const handleBookService = (service) => {
-    if (!user) {
-      alert('Please create an account or sign in to book treatments.');
-      setShowAuth(true);
-      return;
-    }
-    setSelectedService(service);
-    setShowBooking(true);
+    localStorage.removeItem('aqualux_current_user');
+    setIsProfileOpen(false);
   };
 
   const handleBookingComplete = (booking) => {
-    setAllBookings(prevBookings => [...prevBookings, booking]);
-    // Also add to user's personal booking history
-    if (user && booking.customerEmail === user.email) {
-      setUserBookings(prevUserBookings => [...prevUserBookings, booking]);
-    }
-    // You could also save to localStorage or send to a backend here
-    alert(`Booking confirmed! Your ${booking.serviceName} appointment is scheduled for ${booking.date} at ${booking.time}.`);
-  };
-  // Update current section based on scroll position
-  const handleCancelBooking = (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      // Update booking status to cancelled in allBookings
-      setAllBookings(prevBookings => 
-        prevBookings.map(booking => 
-          booking.id === bookingId 
-            ? { ...booking, status: 'cancelled' }
-            : booking
-        )
-      );
-      
-      // Update user's personal booking history
-      setUserBookings(prevUserBookings => 
-        prevUserBookings.map(booking => 
-          booking.id === bookingId 
-            ? { ...booking, status: 'cancelled' }
-            : booking
-        )
-      );
-      
-      alert('Booking has been cancelled successfully.');
-    }
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = ['home', 'services', 'about'];
-      const headerHeight = 64;
-      
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top <= headerHeight + 100 && rect.bottom >= headerHeight + 100) {
-            setCurrentSection(section);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Load user bookings when user changes
-  useEffect(() => {
+    // Add booking to user's bookings
     if (user) {
-      // Filter bookings for current user and update userBookings
-      const filteredBookings = allBookings.filter(booking => 
-        booking.customerEmail === user.email
-      );
-      setUserBookings(filteredBookings);
-    } else {
-      setUserBookings([]);
-    }
-  }, [user, allBookings]);
-
-  // Admin mode rendering
-
-  
-  return (
-    <div className="min-h-screen bg-white">
-      <Header 
-        currentSection={currentSection} 
-        user={user}
-        onAuthClick={() => setShowAuthModal(true)}
-        onProfileClick={() => setShowUserProfile(true)}
-      />
-      
-      <main>
-        <section id="home">
-          <Hero />
-        </section>
+      const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
+      const userIndex = users.findIndex((u) => u.id === user.id);
+      if (userIndex !== -1) {
+        users[userIndex].bookings = users[userIndex].bookings || [];
+        users[userIndex].bookings.push(booking);
+        localStorage.setItem('aqualux_users', JSON.stringify(users));
         
-        <section id="services">
-          <Services onBookService={handleBookService} user={user} />
-        </section>
-      </main>
-      
-      {/* Authentication */}
-      <Auth
-        isOpen={showAuth}
-        onClose={() => setShowAuth(false)}
-        onAuth={handleUserAuth}
-        registeredUsers={registeredUsers}
-      />
+        // Update current user
+        const updatedUser = { ...user, bookings: users[userIndex].bookings };
+        setUser(updatedUser);
+        localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
+      }
+    }
 
-      {/* User Profile Modal */}
-      {user && showUserProfile && (
-        <UserProfile
-          user={user}
-          userBookings={userBookings}
-          onClose={() => setShowUserProfile(false)}
-          onUpdateUser={handleUpdateUser}
-          onLogout={handleUserLogout}
-          onCancelBooking={handleCancelBooking}
-        />
-      )}
+    // Add to all bookings for admin
+    const newAllBookings = [...allBookings, booking];
+    setAllBookings(newAllBookings);
+    localStorage.setItem('aqualux_all_bookings', JSON.stringify(newAllBookings));
+  };
 
-      {/* Booking*/}
-      <Booking
-        isOpen={showBooking}
-        onClose={() => setShowBooking(false)}
-        service={selectedService}
-        user={user}
-        onBookingComplete={handleBookingComplete}
-      />
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
+  };
 
-      {/* Hidden admin access hint */}
-      <div className="fixed bottom-4 right-4 opacity-20 hover:opacity-100 transition-opacity duration-300">
-        <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-          <div className="text-center">
-            <div className="font-medium">Admin Access:</div>
-            <div>Ctrl+Shift+A</div>
-            <div>?admin=true</div>
-            <div>admin@aqualuxspa.com</div>
+  const HomePage = () => (
+    <div className="min-h-screen">
+      <Hero />
+      <About />
+      <Services />
+      <div id="booking">
+        <div className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Book Your Treatment
+              </h2>
+              <p className="text-xl text-gray-600">
+                Reserve your spot for the ultimate spa experience
+              </p>
+            </div>
+            <BookingPage user={user} onBookingComplete={handleBookingComplete} />
           </div>
         </div>
       </div>
     </div>
+  );
+
+  const ServicesPage = () => (
+    <div className="min-h-screen pt-16">
+      <div className="py-20">
+        <Services />
+      </div>
+      <div id="booking">
+        <div className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Book Your Treatment
+              </h2>
+              <p className="text-xl text-gray-600">
+                Reserve your spot for the ultimate spa experience
+              </p>
+            </div>
+            <BookingPage user={user} onBookingComplete={handleBookingComplete} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const BookingOnlyPage = () => (
+    <div className="min-h-screen pt-16">
+      <div className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Book Your Treatment
+            </h2>
+            <p className="text-xl text-gray-600">
+              Reserve your spot for the ultimate spa experience
+            </p>
+          </div>
+          <BookingPage user={user} onBookingComplete={handleBookingComplete} />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Router>
+      <div className="App">
+        <Header
+          isAdmin={user?.isAdmin}
+          user={user}
+          onAuthClick={() => setIsAuthOpen(true)}
+          onProfileClick={() => setIsProfileOpen(true)}
+        />
+        
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/booking" element={<BookingOnlyPage />} />
+          <Route 
+            path="/admin" 
+            element={
+              user?.isAdmin ? (
+                <div className="pt-16">
+                  <Admin 
+                    user={user} 
+                    allBookings={allBookings} 
+                    setAllBookings={setAllBookings} 
+                  />
+                </div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+        </Routes>
+
+        <Auth
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onLogin={handleLogin}
+        />
+
+        <UserProfile
+          user={user}
+          onLogout={handleLogout}
+          onClose={() => setIsProfileOpen(false)}
+          isOpen={isProfileOpen}
+          onUserUpdate={handleUserUpdate}
+        />
+      </div>
+    </Router>
   );
 }
 

@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { User, Calendar, Phone, Mail, Settings, LogOut, Clock, Star, Gift, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { User, Calendar, Phone, Mail, Settings, LogOut, Clock, Star, Edit, Trash2, CheckCircle } from 'lucide-react';
 
 const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('bookings');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    preferredTemperature: user?.preferences?.temperature || 'medium',
+    favoriteAromatherapy: user?.preferences?.aromatherapy || 'lavender'
+  });
 
   // Get user's actual bookings from localStorage
   const getUserBookings = () => {
@@ -136,8 +145,7 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
           <div className="flex space-x-1 mb-8 bg-gray-100 rounded-lg p-1">
             {[
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
-              { id: 'profile', label: 'Profile', icon: User },
-              { id: 'rewards', label: 'Rewards', icon: Gift }
+              { id: 'profile', label: 'Profile', icon: User }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -341,10 +349,6 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                       <span>Total Bookings:</span>
                       <span className="font-semibold">{userBookings.length}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Points:</span>
-                      <span className="font-semibold">{user.points || 2450}</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -372,59 +376,6 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                       <option>Chamomile (Calming)</option>
                       <option>Citrus (Uplifting)</option>
                     </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'rewards' && (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-xl p-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">{user.points || 2450} Points</h3>
-                <p className="opacity-90">You're 550 points away from your next reward!</p>
-                <div className="mt-4 bg-white bg-opacity-20 rounded-full h-2">
-                  <div className="bg-white rounded-full h-2 w-4/5"></div>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4">Available Rewards</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                      <div>
-                        <div className="font-medium">Free 30-min Treatment</div>
-                        <div className="text-sm text-gray-600">1,000 points</div>
-                      </div>
-                      <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                        Redeem
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                      <div>
-                        <div className="font-medium">20% Off Next Visit</div>
-                        <div className="text-sm text-gray-600">1,500 points</div>
-                      </div>
-                      <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                        Redeem
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4">Points History</h4>
-                  <div className="space-y-3">
-                    {userBookings.filter((b) => b.status === 'completed').map((booking, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{booking.service}</span>
-                        <span className="text-green-600">+{Math.floor(booking.price / 10)} pts</span>
-                      </div>
-                    ))}
-                    {userBookings.filter((b) => b.status === 'completed').length === 0 && (
-                      <p className="text-gray-500 text-sm">Complete treatments to earn points!</p>
-                    )}
                   </div>
                 </div>
               </div>

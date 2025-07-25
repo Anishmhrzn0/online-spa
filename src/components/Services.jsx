@@ -1,46 +1,50 @@
 import React from 'react';
 import { Droplets, Thermometer, Flower, Clock, Star } from 'lucide-react';
 
-const Services = () => {
-  const services = [
-    {
-      icon: Droplets,
-      title: 'Hydrotherapy Supreme',
-      description: 'Advanced water therapy with mineral-rich solutions and targeted pressure points',
-      features: ['Mineral infusion', 'Pressure therapy', 'Temperature control'],
-      price: '$180',
-      duration: '90 min',
-      rating: 4.9
-    },
-    {
-      icon: Thermometer,
-      title: 'Thermal Equilibrium',
-      description: 'Precision temperature therapy alternating between hot and cold immersion',
-      features: ['Hot/cold therapy', 'Circulation boost', 'Muscle recovery'],
-      price: '$150',
-      duration: '75 min',
-      rating: 4.8
-    },
-    {
-      icon: Flower,
-      title: 'Aromatherapy Luxe',
-      description: 'Personalized essential oil blends with chromotherapy light systems',
-      features: ['Custom aromatherapy', 'Light therapy', 'Mood enhancement'],
-      price: '$200',
-      duration: '105 min',
-      rating: 5.0
-    },
-    {
-      icon: Clock,
-      title: 'Wellness Intensive',
-      description: 'Complete spa experience combining multiple therapies for ultimate relaxation',
-      features: ['Multi-therapy', 'Personalized plan', 'Wellness coaching'],
-      price: '$350',
-      duration: '180 min',
-      rating: 4.9
-    }
-  ];
+export const services = [
+  {
+    id: 1,
+    icon: Droplets,
+    title: 'Hydrotherapy Supreme',
+    description: 'Advanced water therapy with mineral-rich solutions and targeted pressure points',
+    features: ['Mineral infusion', 'Pressure therapy', 'Temperature control'],
+    price: '$180',
+    duration: '90 min',
+    rating: 4.9
+  },
+  {
+    id: 2,
+    icon: Thermometer,
+    title: 'Thermal Equilibrium',
+    description: 'Precision temperature therapy alternating between hot and cold immersion',
+    features: ['Hot/cold therapy', 'Circulation boost', 'Muscle recovery'],
+    price: '$150',
+    duration: '75 min',
+    rating: 4.8
+  },
+  {
+    id: 3,
+    icon: Flower,
+    title: 'Aromatherapy Luxe',
+    description: 'Personalized essential oil blends with chromotherapy light systems',
+    features: ['Custom aromatherapy', 'Light therapy', 'Mood enhancement'],
+    price: '$200',
+    duration: '105 min',
+    rating: 5.0
+  },
+  {
+    id: 4,
+    icon: Clock,
+    title: 'Wellness Intensive',
+    description: 'Complete spa experience combining multiple therapies for ultimate relaxation',
+    features: ['Multi-therapy', 'Personalized plan', 'Wellness coaching'],
+    price: '$350',
+    duration: '180 min',
+    rating: 4.9
+  }
+];
 
+const Services = () => {
   const handleBookNow = () => {
     const bookingElement = document.getElementById('booking');
     if (bookingElement) {

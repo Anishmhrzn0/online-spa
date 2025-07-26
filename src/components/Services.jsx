@@ -1,7 +1,8 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
 import { Droplets, Thermometer, Flower, Clock, Star } from 'lucide-react';
 
-export const services = [
+export const defaultServices = [
   {
     id: 1,
     icon: Droplets,
@@ -45,6 +46,21 @@ export const services = [
 ];
 
 const Services = () => {
+  const [services, setServices] = useState(defaultServices);
+
+  // Load services from localStorage or use defaults
+  useEffect(() => {
+    const savedServices = localStorage.getItem('aqualux_services');
+    if (savedServices) {
+      try {
+        setServices(JSON.parse(savedServices));
+      } catch (error) {
+        console.error('Error loading services:', error);
+        setServices(defaultServices);
+      }
+    }
+  }, []);
+
   const handleBookNow = () => {
     const bookingElement = document.getElementById('booking');
     if (bookingElement) {
@@ -122,4 +138,5 @@ const Services = () => {
   );
 };
 
+export const services = defaultServices; // Keep this export for backward compatibility
 export default Services;

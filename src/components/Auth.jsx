@@ -104,7 +104,7 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
 
       // Create new user
       const newUser = {
-        id: Date.now(),
+        id: Date.now().toString(),
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

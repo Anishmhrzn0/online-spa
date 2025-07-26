@@ -143,10 +143,12 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
           </div>
 
           <div className="flex space-x-1 mb-8 bg-gray-100 rounded-lg p-1">
-            {[
+            {(user?.isAdmin ? [
+              { id: 'profile', label: 'Profile', icon: User }
+            ] : [
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
               { id: 'profile', label: 'Profile', icon: User }
-            ].map((tab) => (
+            ]).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -162,7 +164,7 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
             ))}
           </div>
 
-          {activeTab === 'bookings' && (
+          {activeTab === 'bookings' && !user?.isAdmin && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>

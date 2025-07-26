@@ -75,6 +75,12 @@ function App() {
     const newAllBookings = [...allBookings, booking];
     setAllBookings(newAllBookings);
     localStorage.setItem('aqualux_all_bookings', JSON.stringify(newAllBookings));
+    
+    // Force refresh of admin bookings if admin is viewing
+    if (user && user.isAdmin) {
+      const updatedBookings = JSON.parse(localStorage.getItem('aqualux_all_bookings') || '[]');
+      setAllBookings(updatedBookings);
+    }
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -90,15 +96,19 @@ function App() {
       <div id="booking">
         <div className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Book Your Treatment
-              </h2>
-              <p className="text-xl text-gray-600">
-                Reserve your spot for the ultimate spa experience
-              </p>
-            </div>
-            <BookingPage user={user} onBookingComplete={handleBookingComplete} />
+            {!(user && user.isAdmin) ? (
+              <>
+                <div className="text-center mb-12">
+                  <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                    Book Your Treatment
+                  </h2>
+                  <p className="text-xl text-gray-600">
+                    Reserve your spot for the ultimate spa experience
+                  </p>
+                </div>
+                <BookingPage user={user} onBookingComplete={handleBookingComplete} />
+              </>
+            ) : null}
           </div>
         </div>
       </div>
@@ -110,7 +120,29 @@ function App() {
       <div className="py-20">
         <Services />
       </div>
-      <div id="booking">
+      {!(user && user.isAdmin) && (
+        <div id="booking">
+          <div className="py-20 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Book Your Treatment
+                </h2>
+                <p className="text-xl text-gray-600">
+                  Reserve your spot for the ultimate spa experience
+                </p>
+              </div>
+              <BookingPage user={user} onBookingComplete={handleBookingComplete} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const BookingOnlyPage = () => (
+    !(user && user.isAdmin) ? (
+      <div className="min-h-screen pt-16">
         <div className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -125,46 +157,28 @@ function App() {
           </div>
         </div>
       </div>
-    </div>
-  );
-
-  const BookingOnlyPage = () => (
-    <div className="min-h-screen pt-16">
-      <div className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Book Your Treatment
-            </h2>
-            <p className="text-xl text-gray-600">
-              Reserve your spot for the ultimate spa experience
-            </p>
-          </div>
-          <BookingPage user={user} onBookingComplete={handleBookingComplete} />
-        </div>
-      </div>
-    </div>
+    ) : null
   );
 
   return (
     <Router>
       <div className="App">
         <Header
-          isAdmin={user?.isAdmin}
+          isAdmin={user && user.isAdmin}
           user={user}
           onAuthClick={() => setIsAuthOpen(true)}
           onProfileClick={() => setIsProfileOpen(true)}
         />
         
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/booking" element={<BookingOnlyPage />} />
+          <Route path="/" element={<div className="pt-22"><HomePage /></div>} />
+          <Route path="/services" element={<div className="pt-22"><ServicesPage /></div>} />
+          <Route path="/booking" element={<div className="pt-22"><BookingOnlyPage /></div>} />
           <Route 
             path="/admin" 
             element={
-              user?.isAdmin ? (
-                <div className="pt-16">
+              user && user.isAdmin ? (
+                <div className="pt-22">
                   <Admin 
                     user={user} 
                     allBookings={allBookings} 

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Calendar, Clock, User, Mail, Phone, CreditCard } from 'lucide-react';
-import { services } from './Services';
+import { defaultServices } from './Services';
 
 const BookingPage = ({ user, onBookingComplete }) => {
-  const [selectedServiceId, setSelectedServiceId] = useState(services[0].id);
+  const [services, setServices] = useState(defaultServices);
+  const [selectedServiceId, setSelectedServiceId] = useState(defaultServices[0].id);
   const service = services.find(s => s.id === selectedServiceId);
   const [bookingData, setBookingData] = useState({
     date: '',
@@ -15,6 +17,23 @@ const BookingPage = ({ user, onBookingComplete }) => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load services from localStorage or use defaults
+  useEffect(() => {
+    const savedServices = localStorage.getItem('aqualux_services');
+    if (savedServices) {
+      try {
+        const loadedServices = JSON.parse(savedServices);
+        setServices(loadedServices);
+        if (loadedServices.length > 0) {
+          setSelectedServiceId(loadedServices[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading services:', error);
+        setServices(defaultServices);
+      }
+    }
+  }, []);
 
   const timeSlots = [
     '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',

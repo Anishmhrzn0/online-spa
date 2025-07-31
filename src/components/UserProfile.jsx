@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Calendar, Phone, Mail, Settings, LogOut, Clock, Star, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { User, Calendar, Phone, Mail, Settings, LogOut, Clock, Star, Edit, Trash2, CheckCircle, Loader } from 'lucide-react';
+import { bookingsAPI } from '../services/api';
 
 const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -13,65 +14,79 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
     favoriteAromatherapy: user?.preferences?.aromatherapy || 'lavender'
   });
 
-  // Get user's actual bookings from localStorage
-  const getUserBookings = () => {
-    if (!user) return [];
-    const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
-    const currentUser = users.find((u) => u.id === user.id);
-    return currentUser?.bookings || [];
-  };
+  const [userBookings, setUserBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [userBookings, setUserBookings] = useState(getUserBookings());
+  // Fetch user bookings from backend API
+  const fetchUserBookings = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await bookingsAPI.getUserBookings();
+      if (response.success) {
+        setUserBookings(response.data);
+      } else {
+        setError('Failed to fetch bookings');
+      }
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      setError('Failed to fetch bookings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Refresh bookings when user changes or component opens
   useEffect(() => {
     if (user && isOpen) {
-      const updatedBookings = getUserBookings();
-      setUserBookings(updatedBookings);
+      fetchUserBookings();
     }
   }, [user, isOpen]);
 
-  // Update user bookings in localStorage
-  const updateUserBookings = (newBookings) => {
-    const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
-    const userIndex = users.findIndex((u) => u.id === user.id);
-    if (userIndex !== -1) {
-      users[userIndex].bookings = newBookings;
-      localStorage.setItem('aqualux_users', JSON.stringify(users));
-      
-      // Update current user in localStorage
-      const updatedUser = { ...user, bookings: newBookings };
-      localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
-      
-      // Update parent component
-      if (onUserUpdate) {
-        onUserUpdate(updatedUser);
-      }
-      
-      setUserBookings(newBookings);
-    }
-  };
-
-  const cancelBooking = (bookingId) => {
+  const cancelBooking = async (bookingId) => {
     if (confirm('Are you sure you want to cancel this booking?')) {
-      const updatedBookings = userBookings.filter((booking) => booking.id !== bookingId);
-      updateUserBookings(updatedBookings);
-      alert('Booking cancelled successfully.');
+      try {
+        const response = await bookingsAPI.update(bookingId, { status: 'cancelled' });
+        if (response.success) {
+          // Refresh bookings after cancellation
+          fetchUserBookings();
+          alert('Booking cancelled successfully.');
+        } else {
+          alert('Failed to cancel booking. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error cancelling booking:', error);
+        alert('Failed to cancel booking. Please try again.');
+      }
     }
   };
 
-  const rescheduleBooking = (bookingId) => {
+  const rescheduleBooking = async (bookingId) => {
     const newDate = prompt('Enter new date (YYYY-MM-DD):');
     const newTime = prompt('Enter new time (HH:MM):');
     
     if (newDate && newTime) {
-      const updatedBookings = userBookings.map((booking) => 
-        booking.id === bookingId 
-          ? { ...booking, date: newDate, time: newTime, status: 'rescheduled' }
-          : booking
-      );
-      updateUserBookings(updatedBookings);
-      alert('Booking rescheduled successfully.');
+      try {
+        const response = await bookingsAPI.update(bookingId, { 
+          appointmentDate: newDate,
+          appointmentTime: newTime,
+          status: 'rescheduled'
+        });
+        if (response.success) {
+          // Refresh bookings after rescheduling
+          fetchUserBookings();
+          alert('Booking rescheduled successfully.');
+        } else {
+          alert('Failed to reschedule booking. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error rescheduling booking:', error);
+        alert('Failed to reschedule booking. Please try again.');
+      }
     }
   };
 
@@ -92,27 +107,7 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
     }
   };
 
-  const addSampleBooking = () => {
-    const sampleBooking = {
-      id: Date.now(),
-      service: 'Hydrotherapy Supreme',
-      date: '2025-01-20',
-      time: '14:00',
-      status: 'confirmed',
-      price: 180,
-      preferences: {
-        temperature: 'medium',
-        aromatherapy: 'lavender',
-        pressure: 'medium',
-        duration: '90'
-      },
-      bookedAt: new Date().toISOString()
-    };
-    
-    const updatedBookings = [...userBookings, sampleBooking];
-    updateUserBookings(updatedBookings);
-    alert('Sample booking added! You can now see how your bookings will appear.');
-  };
+
 
   if (!isOpen) return null;
 
@@ -172,12 +167,7 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                   <p className="text-gray-600">Manage your spa appointments and treatment history</p>
                 </div>
                 <div className="flex space-x-3">
-                  <button 
-                    onClick={addSampleBooking}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                  >
-                    Add Sample Booking
-                  </button>
+
                   <button 
                     onClick={() => {
                       const bookingElement = document.getElementById('booking');
@@ -198,7 +188,22 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                 </div>
               </div>
 
-              {userBookings.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-12">
+                  <Loader className="h-16 w-16 text-blue-500 animate-spin mx-auto" />
+                  <p className="text-gray-600 mt-4">Loading your bookings...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-12 bg-red-50 rounded-xl">
+                  <p className="text-red-800">{error}</p>
+                  <button 
+                    onClick={fetchUserBookings}
+                    className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : userBookings.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-xl">
                   <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <h4 className="text-xl font-semibold text-gray-900 mb-2">No Bookings Yet</h4>
@@ -230,7 +235,9 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
-                            <h4 className="font-semibold text-gray-900 text-lg">{booking.service}</h4>
+                            <h4 className="font-semibold text-gray-900 text-lg">
+                              {booking.service?.title || 'Service'}
+                            </h4>
                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                               {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                             </span>
@@ -238,7 +245,7 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                           <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-2">
                               <Calendar className="h-4 w-4" />
-                              <span>{new Date(booking.date).toLocaleDateString('en-US', { 
+                              <span>{new Date(booking.appointmentDate).toLocaleDateString('en-US', { 
                                 weekday: 'long', 
                                 year: 'numeric', 
                                 month: 'long', 
@@ -247,23 +254,20 @@ const UserProfile = ({ user, onLogout, onClose, isOpen, onUserUpdate }) => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <Clock className="h-4 w-4" />
-                              <span>{booking.time}</span>
+                              <span>{booking.appointmentTime}</span>
                             </div>
                           </div>
-                          {booking.preferences && (
+                          {booking.specialRequests && (
                             <div className="mt-3 p-3 bg-white rounded-lg">
-                              <h5 className="text-sm font-medium text-gray-900 mb-2">Treatment Preferences:</h5>
-                              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                <div>Temperature: {booking.preferences.temperature}</div>
-                                <div>Aromatherapy: {booking.preferences.aromatherapy}</div>
-                                <div>Pressure: {booking.preferences.pressure}</div>
-                                <div>Duration: {booking.preferences.duration} min</div>
-                              </div>
+                              <h5 className="text-sm font-medium text-gray-900 mb-2">Special Requests:</h5>
+                              <p className="text-sm text-gray-600">{booking.specialRequests}</p>
                             </div>
                           )}
                         </div>
                         <div className="text-right ml-6">
-                          <div className="text-2xl font-bold text-gray-900 mb-2">${booking.price}</div>
+                          <div className="text-2xl font-bold text-gray-900 mb-2">
+                            ${booking.service?.price || booking.totalAmount || '0'}
+                          </div>
                           {booking.status === 'confirmed' && (
                             <div className="flex flex-col space-y-2">
                               <button

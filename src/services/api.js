@@ -72,6 +72,24 @@ export const servicesAPI = {
     const response = await api.get(`/services/${id}`);
     return response.data;
   },
+
+  // Create new service (Admin only)
+  create: async (serviceData) => {
+    const response = await api.post('/services', serviceData);
+    return response.data;
+  },
+
+  // Update service (Admin only)
+  update: async (id, serviceData) => {
+    const response = await api.put(`/services/${id}`, serviceData);
+    return response.data;
+  },
+
+  // Delete service (Admin only)
+  delete: async (id) => {
+    const response = await api.delete(`/services/${id}`);
+    return response.data;
+  },
 };
 
 // Bookings API
@@ -85,6 +103,12 @@ export const bookingsAPI = {
   // Get user's bookings
   getUserBookings: async () => {
     const response = await api.get('/bookings/my');
+    return response.data;
+  },
+
+  // Get all bookings (Admin only)
+  getAll: async () => {
+    const response = await api.get('/bookings');
     return response.data;
   },
 
@@ -118,6 +142,39 @@ export const usersAPI = {
   // Update user profile
   updateProfile: async (userData) => {
     const response = await api.put('/users/profile', userData);
+    return response.data;
+  },
+
+  // Get all users (Admin only)
+  getAll: async () => {
+    const response = await api.get('/users');
+    return response.data;
+  },
+
+  // Get user by ID (Admin only)
+  getById: async (id) => {
+    const response = await api.get(`/users/${id}`);
+    return response.data;
+  },
+
+  // Update user (Admin only)
+  update: async (id, userData) => {
+    const response = await api.put(`/users/${id}`, userData);
+    return response.data;
+  },
+
+  // Delete user (Admin only)
+  delete: async (id) => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+};
+
+// Admin API
+export const adminAPI = {
+  // Get admin dashboard data
+  getDashboard: async () => {
+    const response = await api.get('/admin/dashboard');
     return response.data;
   },
 };

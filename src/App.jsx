@@ -1,29 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import Header from './components/Header';
-import Hero from './components/Hero';
-import About from './components/About';
-import Services from './components/Services';
-import BookingPage from './components/Booking';
+import AppRoutes from './routes/appRoute';
 import Auth from './components/Auth';
 import UserProfile from './components/UserProfile';
-import Admin from './components/Admin';
 
 function App() {
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [allBookings, setAllBookings] = useState([]);
+  const [userBookings, setUserBookings] = useState([]);
 
   // Load user from localStorage on app start
   useEffect(() => {
-    const savedUser = localStorage.getItem('aqualux_current_user');
-    if (savedUser) {
+    const savedUser = localStorage.getItem('user');
+    const authToken = localStorage.getItem('authToken');
+    
+    if (savedUser && authToken) {
       try {
-        setUser(JSON.parse(savedUser));
+        const userData = JSON.parse(savedUser);
+        const userWithName = {
+          ...userData,
+          name: `${userData.firstName} ${userData.lastName}`,
+          isAdmin: userData.isAdmin || false
+        };
+        setUser(userWithName);
       } catch (error) {
         console.error('Error loading user from localStorage:', error);
-        localStorage.removeItem('aqualux_current_user');
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
       }
     }
 
@@ -42,34 +48,23 @@ function App() {
     const userWithName = {
       ...userData,
       name: `${userData.firstName} ${userData.lastName}`,
-      isAdmin: userData.email === 'admin@aqualux.com' // Make admin user
+      isAdmin: userData.isAdmin || false
     };
     setUser(userWithName);
-    localStorage.setItem('aqualux_current_user', JSON.stringify(userWithName));
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('aqualux_current_user');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
     setIsProfileOpen(false);
   };
 
   const handleBookingComplete = (booking) => {
-    // Add booking to user's bookings
-    if (user) {
-      const users = JSON.parse(localStorage.getItem('aqualux_users') || '[]');
-      const userIndex = users.findIndex((u) => u.id === user.id);
-      if (userIndex !== -1) {
-        users[userIndex].bookings = users[userIndex].bookings || [];
-        users[userIndex].bookings.push(booking);
-        localStorage.setItem('aqualux_users', JSON.stringify(users));
-        
-        // Update current user
-        const updatedUser = { ...user, bookings: users[userIndex].bookings };
-        setUser(updatedUser);
-        localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
-      }
-    }
+    // Add to user's bookings
+    const newUserBookings = [...userBookings, booking];
+    setUserBookings(newUserBookings);
 
     // Add to all bookings for admin
     const newAllBookings = [...allBookings, booking];
@@ -85,80 +80,10 @@ function App() {
 
   const handleUserUpdate = (updatedUser) => {
     setUser(updatedUser);
-    localStorage.setItem('aqualux_current_user', JSON.stringify(updatedUser));
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
-  const HomePage = () => (
-    <div className="min-h-screen">
-      <Hero />
-      <About />
-      <Services />
-      <div id="booking">
-        <div className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {!(user && user.isAdmin) ? (
-              <>
-                <div className="text-center mb-12">
-                  <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                    Book Your Treatment
-                  </h2>
-                  <p className="text-xl text-gray-600">
-                    Reserve your spot for the ultimate spa experience
-                  </p>
-                </div>
-                <BookingPage user={user} onBookingComplete={handleBookingComplete} />
-              </>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
-  const ServicesPage = () => (
-    <div className="min-h-screen pt-16">
-      <div className="py-20">
-        <Services />
-      </div>
-      {!(user && user.isAdmin) && (
-        <div id="booking">
-          <div className="py-20 bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Book Your Treatment
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Reserve your spot for the ultimate spa experience
-                </p>
-              </div>
-              <BookingPage user={user} onBookingComplete={handleBookingComplete} />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const BookingOnlyPage = () => (
-    !(user && user.isAdmin) ? (
-      <div className="min-h-screen pt-16">
-        <div className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Book Your Treatment
-              </h2>
-              <p className="text-xl text-gray-600">
-                Reserve your spot for the ultimate spa experience
-              </p>
-            </div>
-            <BookingPage user={user} onBookingComplete={handleBookingComplete} />
-          </div>
-        </div>
-      </div>
-    ) : null
-  );
 
   return (
     <Router>
@@ -170,27 +95,13 @@ function App() {
           onProfileClick={() => setIsProfileOpen(true)}
         />
         
-        <Routes>
-          <Route path="/" element={<div className="pt-22"><HomePage /></div>} />
-          <Route path="/services" element={<div className="pt-22"><ServicesPage /></div>} />
-          <Route path="/booking" element={<div className="pt-22"><BookingOnlyPage /></div>} />
-          <Route 
-            path="/admin" 
-            element={
-              user && user.isAdmin ? (
-                <div className="pt-22">
-                  <Admin 
+          <AppRoutes 
                     user={user} 
+            userBookings={userBookings}
                     allBookings={allBookings} 
                     setAllBookings={setAllBookings} 
-                  />
-                </div>
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } 
+            onBookingComplete={handleBookingComplete}
           />
-        </Routes>
 
         <Auth
           isOpen={isAuthOpen}

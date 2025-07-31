@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Calendar, Clock, User, Mail, Phone, CreditCard } from 'lucide-react';
 import { defaultServices } from './Services';
+import { bookingsAPI, servicesAPI } from '../services/api.js';
 
 const BookingPage = ({ user, onBookingComplete }) => {
   const [services, setServices] = useState(defaultServices);
@@ -18,21 +19,24 @@ const BookingPage = ({ user, onBookingComplete }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load services from localStorage or use defaults
+  // Load services from backend API
   useEffect(() => {
-    const savedServices = localStorage.getItem('aqualux_services');
-    if (savedServices) {
+    const loadServices = async () => {
       try {
-        const loadedServices = JSON.parse(savedServices);
-        setServices(loadedServices);
-        if (loadedServices.length > 0) {
-          setSelectedServiceId(loadedServices[0].id);
+        const response = await servicesAPI.getAll();
+        if (response.success && response.data.length > 0) {
+          setServices(response.data);
+          setSelectedServiceId(response.data[0].id);
+        } else {
+          setServices(defaultServices);
         }
       } catch (error) {
         console.error('Error loading services:', error);
         setServices(defaultServices);
       }
-    }
+    };
+
+    loadServices();
   }, []);
 
   const timeSlots = [
@@ -65,9 +69,23 @@ const BookingPage = ({ user, onBookingComplete }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const bookingDataToSend = {
+        serviceId: service.id,
+        appointmentDate: bookingData.date,
+        appointmentTime: bookingData.time,
+        customerName: bookingData.name,
+        customerEmail: bookingData.email,
+        customerPhone: bookingData.phone,
+        specialRequests: bookingData.specialRequests
+      };
+
+      const response = await bookingsAPI.create(bookingDataToSend);
+
+      if (response.success) {
       const booking = {
-        id: Date.now(),
+          id: response.data.id,
         serviceId: service.id,
         serviceName: service.title,
         servicePrice: service.price,
@@ -78,22 +96,29 @@ const BookingPage = ({ user, onBookingComplete }) => {
         customerEmail: bookingData.email,
         customerPhone: bookingData.phone,
         specialRequests: bookingData.specialRequests,
-        status: 'confirmed',
-        createdAt: new Date().toISOString()
+          status: response.data.status,
+          createdAt: response.data.createdAt
       };
+
       if (onBookingComplete) onBookingComplete(booking);
-      setIsLoading(false);
+        
       setBookingData({
         date: '',
         time: '',
-        name: user?.name || '',
+          name: user?.firstName ? `${user.firstName} ${user.lastName}` : '',
         email: user?.email || '',
-        phone: '',
+          phone: user?.phone || '',
         specialRequests: ''
       });
       setErrors({});
       alert(`Booking confirmed! Your ${booking.serviceName} appointment is scheduled for ${booking.date} at ${booking.time}.`);
-    }, 1500);
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      alert(error.response?.data?.message || 'Failed to create booking. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, Phone, Calendar } from 'lucide-react';
+import { authAPI } from '../services/api.js';
 
 const Auth = ({ isOpen, onClose, onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,29 +20,13 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
     }
   });
 
-  // Get registered users from localStorage
-  const getRegisteredUsers = () => {
-    const users = localStorage.getItem('aqualux_users');
-    return users ? JSON.parse(users) : [];
-  };
+  // Handle authentication with backend API
 
-  // Save user to localStorage
-  const saveUser = (user) => {
-    const users = getRegisteredUsers();
-    users.push(user);
-    localStorage.setItem('aqualux_users', JSON.stringify(users));
-  };
-
-  // Find user by email
-  const findUserByEmail = (email) => {
-    const users = getRegisteredUsers();
-    return users.find((user) => user.email.toLowerCase() === email.toLowerCase());
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    try {
     if (isLogin) {
       // Handle Login
       if (!formData.email || !formData.password) {
@@ -49,19 +34,17 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
         return;
       }
 
-      const existingUser = findUserByEmail(formData.email);
-      if (!existingUser) {
-        setError('No account found with this email. Please sign up first.');
-        return;
-      }
+        const response = await authAPI.login({
+          email: formData.email,
+          password: formData.password
+        });
 
-      if (existingUser.password !== formData.password) {
-        setError('Incorrect password. Please try again.');
-        return;
-      }
+        // Store token and user data
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
 
       // Successful login
-      onLogin(existingUser);
+        onLogin(response.user);
       onClose();
       setFormData({
         firstName: '',
@@ -95,32 +78,24 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
         return;
       }
 
-      // Check if user already exists
-      const existingUser = findUserByEmail(formData.email);
-      if (existingUser) {
-        setError('An account with this email already exists. Please sign in instead.');
-        return;
-      }
-
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
+        const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
         birthDate: formData.birthDate,
-        memberSince: new Date().toISOString(),
-        bookings: [],
-        preferences: formData.preferences,
-        points: 0,
-        membershipStatus: 'Premium Member'
-      };
+          preferences: formData.preferences
+        };
 
-      // Save user and log them in
-      saveUser(newUser);
-      onLogin(newUser);
+        const response = await authAPI.register(userData);
+
+        // Store token and user data
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+
+        // Successful registration
+        onLogin(response.user);
       onClose();
       setFormData({
         firstName: '',
@@ -136,6 +111,10 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
         }
       });
       alert('Account created successfully! Welcome to AquaLux Spa.');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      setError(error.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
 

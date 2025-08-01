@@ -6,6 +6,9 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -22,101 +25,86 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
 
   // Handle authentication with backend API
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
+  try {
     if (isLogin) {
-      // Handle Login
-      if (!formData.email || !formData.password) {
+      if (!formData.email.trim() || !formData.password.trim()) {
         setError('Please enter both email and password');
+        setLoading(false);
         return;
       }
 
-        const response = await authAPI.login({
-          email: formData.email,
-          password: formData.password
-        });
-
-        // Store token and user data
-        localStorage.setItem('authToken', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-
-      // Successful login
-        onLogin(response.user);
-      onClose();
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        birthDate: '',
-        preferences: {
-          newsletter: true,
-          smsNotifications: false
-        }
+      const response = await authAPI.login({
+        email: formData.email.trim(),
+        password: formData.password,
       });
-      alert('Welcome back! You have been successfully logged in.');
+
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+
+      onLogin(response.user);
+      onClose();
+      resetForm();
+      // Optional: You can replace alert with a nicer inline message or toast
+      // alert('Welcome back! You have been successfully logged in.');
 
     } else {
-      // Handle Sign Up
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.birthDate) {
+      // Your existing signup code here (you can also add loading and error handling similarly)
+      if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password || !formData.birthDate) {
         setError('Please fill in all required fields');
+        setLoading(false);
         return;
       }
 
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match');
+        setLoading(false);
         return;
       }
 
       if (formData.password.length < 8) {
         setError('Password must be at least 8 characters long');
+        setLoading(false);
         return;
       }
 
-        const userData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
+      const userData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
         password: formData.password,
         birthDate: formData.birthDate,
-          preferences: formData.preferences
-        };
+        preferences: formData.preferences,
+      };
 
-        const response = await authAPI.register(userData);
+      const response = await authAPI.register(userData);
 
-        // Store token and user data
-        localStorage.setItem('authToken', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
 
-        // Successful registration
-        onLogin(response.user);
+      onLogin(response.user);
       onClose();
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        birthDate: '',
-        preferences: {
-          newsletter: true,
-          smsNotifications: false
-        }
-      });
-      alert('Account created successfully! Welcome to AquaLux Spa.');
-      }
-    } catch (error) {
-      console.error('Auth error:', error);
-      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+      resetForm();
+      // alert('Account created successfully! Welcome to AquaLux Spa.');
     }
-  };
+  } catch (error) {
+    if (error.response?.data?.message) {
+      setError(error.response.data.message);
+    } else if (error.message) {
+      setError(error.message);
+    } else {
+      setError('An error occurred. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const resetForm = () => {
     setFormData({
@@ -320,6 +308,7 @@ const Auth = ({ isOpen, onClose, onLogin }) => {
 
             <button
               type="submit"
+                disabled={loading}
               className="w-full bg-gradient-to-r from-blue-600 to-teal-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               {isLogin ? 'Sign In' : 'Create Account'}

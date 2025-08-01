@@ -99,7 +99,6 @@ const AppRoutes = ({ user, userBookings, allBookings, setAllBookings, onBookingC
           )
         } 
       />
-      {/* Add more routes as needed */}
     </Routes>
   );
 };

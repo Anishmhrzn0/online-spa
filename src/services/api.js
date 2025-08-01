@@ -32,7 +32,6 @@ api.interceptors.response.use(
       // Token expired or invalid
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.reload();
     }
     return Promise.reject(error);
   }
